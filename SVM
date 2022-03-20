@@ -1,0 +1,77 @@
+
+---
+title: "数之道27集"
+author: "Funincode-TY"
+date: "3/20/2022"
+--
+
+
+
+library(ggplot2)
+library(e1071)
+
+
+x1 = -5 + 10*runif(200)
+y1 = 2 + 3*x1 + 1*x1^2 + 10*runif(200)
+x2 = -5 + 10*runif(200)
+y2 = 2 + 3*x2 + 1*x2^2 - 10*runif(200)
+
+D = as.data.frame(rbind(cbind(x1, y1), cbind(x2, y2)))
+D = as.data.frame(scale(D))
+D$label = 0
+D$label[(200+1):(2*200)] = 1
+D$label = as.factor(D$label)
+colnames(D) = c("x1", "x2", "label")
+
+ggplot(D, aes(x1, x2, color=label)) + geom_point() + ggtitle('Testing Data')
+
+x1t = -5 + 10*runif(200)
+y1t = 2 + 3*x1t + 1*x1t^2 + 10*runif(200)
+x2t = -5 + 10*runif(200)
+y2t = 2 + 3*x2t + 1*x2t^2 - 10*runif(200)
+
+DT = as.data.frame(rbind(cbind(x1t, y1t), cbind(x2t, y2t)))
+DT = as.data.frame(scale(DT))
+DT$label = 0
+DT$label[(200+1):(2*200)] = 1
+DT$label = as.factor(DT$label)
+colnames(DT) = c("x1", "x2", "label")
+
+
+ggplot(DT, aes(x1, x2, color=label)) + geom_point() + ggtitle('Testing Data')
+
+svc_model = svm(label~., data = D, kernel="radial",gamma=0.01)
+prediction = predict(svc_model, DT) 
+acc = mean(prediction == DT$label)
+
+DT$pred = prediction
+ggplot(DT, aes(x1, x2, color=pred)) + geom_point() + ggtitle(paste("radia",'kernel - Accuracy=',acc))
+
+summary(svc_model)
+
+for (g in c(0.01,0.1,1,10,100,1000))
+{
+  svc_model = svm(label~., data = D, kernel='radial', gamma=g)
+  prediction = predict(svc_model, DT)
+  acc = mean(prediction == DT$label)
+  
+  DT$pred = prediction
+  
+  
+  p = ggplot(DT, aes(x1, x2, color=pred)) + geom_point() + ggtitle(paste('Gamma=',g,' Accuracy=',acc))
+  print(p)
+  
+}
+
+
+model_all<-tune(svm,label~., data = D, kernel="radial", ranges=list(gamma=seq(0,10,0.1),cost=2^(1:5)))
+
+summary(model_all)
+bestmodel<-model_all$best.model
+
+
+prediction = predict(bestmodel, DT) 
+acc = mean(prediction == DT$label) 
+DT$pred = prediction
+ggplot(DT, aes(x1, x2, color=pred)) + geom_point() + ggtitle(paste("radia",'kernel - Accuracy=',acc)) 
+
